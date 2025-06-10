@@ -282,11 +282,12 @@ input[type="text"] {
 .evolution-chain {
   display: flex;
   flex-direction: row;
-  flex-wrap: nowrap;
   align-items: center;
   gap: 1rem;
   margin-top: 1rem;
   width: 100%;
+  overflow-x: auto;
+  padding-bottom: 1rem;
 }
 
 .evo-step {
@@ -302,6 +303,7 @@ input[type="text"] {
   transition: transform 0.2s ease;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .evo-step:hover {
@@ -315,9 +317,27 @@ input[type="text"] {
   margin-bottom: 0.5rem;
 }
 
+.evo-arrow-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
 .evo-arrow {
   font-size: 2rem;
   color: white;
+}
+
+.evo-condition {
+  font-size: 0.75rem;
+  color: #fff;
+  background-color: #555;
+  padding: 0.2rem 0.5rem;
+  border-radius: 10px;
+  white-space: nowrap;
+  text-align: center;
 }
 
 .modal-nav {

@@ -107,6 +107,24 @@ function EvolutionChain({ chain, onSelect, pokemonList }) {
     fetchMissing();
   }, [chain, pokemonList]);
 
+  const renderCondition = (evoDetail) => {
+    if (!evoDetail) return null;
+
+    if (evoDetail.min_level) {
+      return `레벨 ${evoDetail.min_level} 이상`;
+    } else if (evoDetail.item) {
+      return `${evoDetail.item.name} 사용`;
+    } else if (evoDetail.trigger?.name === "trade") {
+      return "교환 시 진화";
+    } else if (evoDetail.min_happiness) {
+      return "친밀도 진화";
+    } else if (evoDetail.trigger?.name) {
+      return `${evoDetail.trigger.name} 조건`;
+    } else {
+      return "조건 없음";
+    }
+  };
+
   const renderChain = (node) => {
     const name = node.species.name;
     const p = pokemonList.find((p) => p.name === name);
@@ -114,7 +132,7 @@ function EvolutionChain({ chain, onSelect, pokemonList }) {
     const koreanName = p?.koreanName || loadedData[name]?.koreanName || name;
 
     const current = (
-      <div className="evo-step" onClick={() => onSelect(name)}>
+      <div className="evo-step" onClick={() => onSelect(name)} key={name}>
         {image ? (
           <img src={image} alt={name} />
         ) : (
@@ -124,16 +142,28 @@ function EvolutionChain({ chain, onSelect, pokemonList }) {
       </div>
     );
 
-    const next =
-      node.evolves_to.length > 0 ? renderChain(node.evolves_to[0]) : null;
+    if (!node.evolves_to || node.evolves_to.length === 0) {
+      return [current];
+    }
 
-    return (
-      <>
-        {current}
-        {next && <span className="evo-arrow">➡️</span>}
-        {next}
-      </>
-    );
+    // 여러 진화 갈래를 가로로 렌더링
+    const chainElements = [current];
+    node.evolves_to.forEach((child, index) => {
+      const evoDetail = child.evolution_details?.[0];
+      const conditionText = renderCondition(evoDetail);
+
+      chainElements.push(
+        <div className="evo-arrow-wrapper" key={`arrow-${name}-${index}`}>
+          <div className="evo-arrow">➡️</div>
+          <div className="evo-condition">{conditionText}</div>
+        </div>
+      );
+
+      const nextChain = renderChain(child);
+      chainElements.push(...nextChain);
+    });
+
+    return chainElements;
   };
 
   if (!chain) return null;
@@ -145,7 +175,6 @@ function App() {
   const [filteredList, setFilteredList] = useState([]);
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
   const [typeFilter, setTypeFilter] = useState([]);
   const [page, setPage] = useState(1);
   const [evoChain, setEvoChain] = useState(null);
@@ -159,7 +188,6 @@ function App() {
     { length: TOTAL_POKEMON },
     (_, i) => i + 1
   );
-  const currentIndex = pokemonList.findIndex((p) => p.id === selected?.id);
 
   const goToPrevPokemon = async () => {
     if (!selected) return;
@@ -303,20 +331,44 @@ function App() {
     return "#e57373"; // red
   };
 
-  const handleSearch = (e) => {
-    const value = e.target.value;
+  const handleSearch = async (e) => {
+    const value = e.target.value.trim();
     setSearch(value);
-    const base = pokemonList;
+
     if (!value) {
-      setSuggestions([]);
-      applyFilter(base);
-    } else {
-      const matched = base.filter(
-        (p) => p.koreanName.includes(value) || p.name.includes(value)
-      );
-      setSuggestions(matched.slice(0, 10));
-      applyFilter(matched);
+      setActiveTab("all");
+      await fetchPokemons(1, true);
+      return;
     }
+
+    setLoading(true);
+
+    // 전체 포켓몬 이름만 먼저 가져오기
+    const allRes = await fetch("https://pokeapi.co/api/v2/pokemon?limit=1025");
+    const allData = await allRes.json();
+    const allNames = allData.results.map((p) => p.name);
+
+    // 모든 포켓몬의 상세정보 + 한글이름 fetch
+    const results = await fetchPokemonsByNames(allNames);
+
+    // value가 한글인지 영어인지 감지
+    const isKorean = /[ㄱ-ㅎ|가-힣]/.test(value);
+
+    // 검색어 기준 필터
+    const filtered = results.filter((p) => {
+      if (isKorean) {
+        return p.koreanName.includes(value);
+      } else {
+        return p.name.includes(value.toLowerCase());
+      }
+    });
+
+    setPokemonList(filtered);
+    setFilteredList(filtered);
+    setTypeFilter([]);
+    setActiveTab("all");
+    setPage(1);
+    setLoading(false);
   };
 
   const applyFilter = (list, tab = activeTab) => {
@@ -403,9 +455,7 @@ function App() {
       })
     );
 
-    return results
-      .filter((r) => r) // null 제거
-      .sort((a, b) => a.id - b.id); // ✅ id 기준 오름차순 정렬
+    return results.filter(Boolean).sort((a, b) => a.id - b.id);
   };
 
   const toggleFavorite = (id) => {
@@ -423,9 +473,16 @@ function App() {
 
   const handlePageChange = (newPage) => {
     setPage(newPage);
-    const requiredCount = newPage * POKEMON_LIMIT;
-    if (pokemonList.length < requiredCount) {
-      fetchPokemons(newPage);
+
+    const isFiltering =
+      typeFilter.length > 0 || activeTab === "favorites" || search;
+
+    // ✅ 필터링 중이면 fetch 금지 (이미 필터링된 목록만 보여줌)
+    if (!isFiltering) {
+      const requiredCount = newPage * POKEMON_LIMIT;
+      if (pokemonList.length < requiredCount) {
+        fetchPokemons(newPage);
+      }
     }
   };
 
@@ -464,15 +521,6 @@ function App() {
               onChange={handleSearch}
               placeholder="이름으로 검색"
             />
-            {suggestions.length > 0 && (
-              <ul className="suggestions">
-                {suggestions.map((p) => (
-                  <li key={p.id} onClick={() => openModal(p)}>
-                    {p.koreanName}
-                  </li>
-                ))}
-              </ul>
-            )}
             <button
               onClick={() => {
                 const newTab = activeTab === "favorites" ? "all" : "favorites";
