@@ -59,6 +59,7 @@ input[type="text"] {
   box-sizing: border-box;
 }
 
+/* 즐겨찾기 버튼 */
 .favorite-toggle {
   padding: 0.5rem 1.2rem;
   border-radius: 20px;
@@ -81,6 +82,7 @@ input[type="text"] {
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
 }
 
+/* 타입 필터 */
 .types {
   display: grid;
   width: 100%;
@@ -118,8 +120,66 @@ input[type="text"] {
   border: 3px solid black;
   background-color: var(--type-color);
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
+  transform: scale(1.1);
 }
 
+/* 세대 필터 */
+.generations {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.generations button {
+  border-radius: 20px;
+  padding: 0.5rem 1.2rem;
+  background-color: #666;
+  color: white;
+  border: 1px solid transparent;
+  font-weight: 500;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.generations button:hover {
+  background-color: #999;
+  transform: scale(1.05);
+}
+
+.generations button.active-generation {
+  background-color: gold;
+  color: black;
+  font-weight: bold;
+  border: 2px solid #333;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+  transform: scale(1.1);
+}
+
+/* 필터 전환 버튼 (타입/세대) */
+.filter-toggle-btn {
+  background-color: #444;
+  color: white;
+  border-radius: 20px;
+  padding: 0.5rem 1.2rem;
+  margin: 0 0.25rem;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.filter-toggle-btn:hover {
+  background-color: #888;
+  transform: scale(1.05);
+}
+
+.filter-toggle-btn.active {
+  background-color: #4caf50;
+  color: white;
+  font-weight: bold;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
+}
+
+/* 포켓몬 카드 */
 .pokemon-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -180,6 +240,7 @@ input[type="text"] {
   margin-right: 0.25rem;
 }
 
+/* 페이지네이션 */
 .pagination {
   display: flex;
   flex-direction: row;
@@ -193,6 +254,7 @@ input[type="text"] {
   padding: 0.5rem 1rem;
 }
 
+/* 모달 */
 .modal {
   display: flex;
   flex-direction: column;
@@ -279,6 +341,7 @@ input[type="text"] {
   transition: width 0.3s ease-in-out, background-color 0.3s;
 }
 
+/* 진화 트리 */
 .evolution-chain {
   display: flex;
   flex-direction: row;
@@ -362,6 +425,7 @@ input[type="text"] {
   background-color: #555;
 }
 
+/* 로딩 스피너 */
 .loading-spinner {
   width: 100%;
   height: 300px;
@@ -386,6 +450,7 @@ input[type="text"] {
   }
 }
 
+/* 반응형 */
 @media screen and (max-width: 768px) {
   input {
     margin-bottom: 5px;

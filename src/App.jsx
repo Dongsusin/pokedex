@@ -52,6 +52,18 @@ const STAT_LABELS_KO = {
   speed: "스피드",
 };
 
+const GENERATION_RANGES = {
+  1: [1, 151],
+  2: [152, 251],
+  3: [252, 386],
+  4: [387, 493],
+  5: [494, 649],
+  6: [650, 721],
+  7: [722, 809],
+  8: [810, 905],
+  9: [906, 1025],
+};
+
 const pokeballImg =
   "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png";
 
@@ -184,6 +196,9 @@ function App() {
   });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
+  const [filterMode, setFilterMode] = useState("type"); // "type" 또는 "generation"
+  const [generationFilter, setGenerationFilter] = useState(null);
+
   const ALL_POKEMON_IDS = Array.from(
     { length: TOTAL_POKEMON },
     (_, i) => i + 1
@@ -486,6 +501,28 @@ function App() {
     }
   };
 
+  const handleGenerationFilter = async (gen) => {
+    if (generationFilter === gen) {
+      setGenerationFilter(null);
+      await fetchPokemons(1, true); // 전체 리셋
+      return;
+    }
+
+    setLoading(true);
+    setGenerationFilter(gen);
+    setTypeFilter([]);
+    setSearch("");
+
+    const [start, end] = GENERATION_RANGES[gen];
+    const ids = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+
+    const results = await fetchPokemonsByNames(ids.map((id) => id.toString()));
+    setPokemonList(results);
+    setFilteredList(results);
+    setPage(1);
+    setLoading(false);
+  };
+
   const paginated = filteredList.slice(
     (page - 1) * POKEMON_LIMIT,
     page * POKEMON_LIMIT
@@ -514,6 +551,7 @@ function App() {
               justifyContent: "center",
               gap: "1rem",
               marginBottom: "1rem",
+              flexWrap: "wrap",
             }}
           >
             <input
@@ -521,11 +559,15 @@ function App() {
               onChange={handleSearch}
               placeholder="이름으로 검색"
             />
+            <button onClick={() => setFilterMode("type")}>타입 필터</button>
+            <button onClick={() => setFilterMode("generation")}>
+              세대 필터
+            </button>
             <button
               onClick={() => {
                 const newTab = activeTab === "favorites" ? "all" : "favorites";
                 setActiveTab(newTab);
-                applyFilter(pokemonList, newTab); // ← 여기에 newTab을 명시
+                applyFilter(pokemonList, newTab);
               }}
               className={`favorite-toggle ${
                 activeTab === "favorites" ? "active-favorite" : ""
@@ -535,20 +577,36 @@ function App() {
             </button>
           </div>
 
-          <div className="types">
-            {Object.keys(TYPE_COLORS).map((type) => (
-              <button
-                key={type}
-                className={typeFilter.includes(type) ? "active-type" : ""}
-                style={{
-                  "--type-color": TYPE_COLORS[type],
-                }}
-                onClick={() => handleTypeFilter(type)}
-              >
-                <img src={typeIcon(type)} alt={type} />
-              </button>
-            ))}
-          </div>
+          {filterMode === "type" && (
+            <div className="types">
+              {Object.keys(TYPE_COLORS).map((type) => (
+                <button
+                  key={type}
+                  className={typeFilter.includes(type) ? "active-type" : ""}
+                  style={{ "--type-color": TYPE_COLORS[type] }}
+                  onClick={() => handleTypeFilter(type)}
+                >
+                  <img src={typeIcon(type)} alt={type} />
+                </button>
+              ))}
+            </div>
+          )}
+
+          {filterMode === "generation" && (
+            <div className="generations">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((gen) => (
+                <button
+                  key={gen}
+                  className={
+                    generationFilter === gen ? "active-generation" : ""
+                  }
+                  onClick={() => handleGenerationFilter(gen)}
+                >
+                  {gen}세대
+                </button>
+              ))}
+            </div>
+          )}
 
           <div
             className="pokemon-grid"
