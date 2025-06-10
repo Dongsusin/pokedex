@@ -198,6 +198,15 @@ function App() {
   const [activeTab, setActiveTab] = useState("all");
   const [filterMode, setFilterMode] = useState("type"); // "type" 또는 "generation"
   const [generationFilter, setGenerationFilter] = useState(null);
+  const [showIntro, setShowIntro] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowIntro(false);
+    }, 2000); // 2초 후 인트로 종료
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const ALL_POKEMON_IDS = Array.from(
     { length: TOTAL_POKEMON },
@@ -413,9 +422,10 @@ function App() {
     // 🔄 모든 타입 선택 해제 시 전체 다시 불러오기
     if (newFilters.length === 0) {
       setTypeFilter([]);
+      setGenerationFilter(null); // ✅ 세대도 해제
       setActiveTab("all");
       setPage(1);
-      await fetchPokemons(1, true); // ✅ 전체 리셋 모드로 fetch
+      await fetchPokemons(1, true); // ✅ 전체 fetch
       return;
     }
 
@@ -490,9 +500,12 @@ function App() {
     setPage(newPage);
 
     const isFiltering =
-      typeFilter.length > 0 || activeTab === "favorites" || search;
+      typeFilter.length > 0 ||
+      activeTab === "favorites" ||
+      search ||
+      generationFilter !== null; // ✅ 세대 필터도 필터링에 포함
 
-    // ✅ 필터링 중이면 fetch 금지 (이미 필터링된 목록만 보여줌)
+    // ✅ 필터링 중이면 fetch 금지
     if (!isFiltering) {
       const requiredCount = newPage * POKEMON_LIMIT;
       if (pokemonList.length < requiredCount) {
@@ -504,7 +517,11 @@ function App() {
   const handleGenerationFilter = async (gen) => {
     if (generationFilter === gen) {
       setGenerationFilter(null);
-      await fetchPokemons(1, true); // 전체 리셋
+      setPage(1);
+      setSearch("");
+      setActiveTab("all");
+      setTypeFilter([]);
+      await fetchPokemons(1, true); // ✅ 전체 포켓몬 다시 fetch
       return;
     }
 
@@ -529,248 +546,283 @@ function App() {
   );
 
   const isFiltering =
-    typeFilter.length > 0 || activeTab === "favorites" || search;
+    typeFilter.length > 0 ||
+    activeTab === "favorites" ||
+    search ||
+    generationFilter !== null;
 
   const totalPages = isFiltering
     ? Math.ceil(filteredList.length / POKEMON_LIMIT)
     : Math.ceil(TOTAL_POKEMON / POKEMON_LIMIT);
 
   return (
-    <div
-      className="app"
-      tabIndex={0}
-      onKeyDown={(e) => e.key === "Escape" && closeModal()}
-    >
-      <h1>포켓몬 도감</h1>
-
-      {!selected && (
-        <>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: "1rem",
-              marginBottom: "1rem",
-              flexWrap: "wrap",
-            }}
-          >
-            <input
-              value={search}
-              onChange={handleSearch}
-              placeholder="이름으로 검색"
-            />
-            <button onClick={() => setFilterMode("type")}>타입 필터</button>
-            <button onClick={() => setFilterMode("generation")}>
-              세대 필터
-            </button>
-            <button
-              onClick={() => {
-                const newTab = activeTab === "favorites" ? "all" : "favorites";
-                setActiveTab(newTab);
-                applyFilter(pokemonList, newTab);
-              }}
-              className={`favorite-toggle ${
-                activeTab === "favorites" ? "active-favorite" : ""
-              }`}
-            >
-              즐겨찾기
-            </button>
-          </div>
-
-          {filterMode === "type" && (
-            <div className="types">
-              {Object.keys(TYPE_COLORS).map((type) => (
-                <button
-                  key={type}
-                  className={typeFilter.includes(type) ? "active-type" : ""}
-                  style={{ "--type-color": TYPE_COLORS[type] }}
-                  onClick={() => handleTypeFilter(type)}
-                >
-                  <img src={typeIcon(type)} alt={type} />
-                </button>
-              ))}
-            </div>
-          )}
-
-          {filterMode === "generation" && (
-            <div className="generations">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((gen) => (
-                <button
-                  key={gen}
-                  className={
-                    generationFilter === gen ? "active-generation" : ""
-                  }
-                  onClick={() => handleGenerationFilter(gen)}
-                >
-                  {gen}세대
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div
-            className="pokemon-grid"
-            style={{ display: loading ? "block" : "grid" }}
-          >
-            {loading ? (
-              <div className="loading-spinner">
-                <img src={pokeballImg} alt="loading" />
-              </div>
-            ) : (
-              paginated.map((p) => {
-                const types = p.types.map((t) => t.type.name);
-                const bgStyle =
-                  types.length === 1
-                    ? TYPE_COLORS[types[0]]
-                    : `linear-gradient(135deg, ${TYPE_COLORS[types[0]]}, ${
-                        TYPE_COLORS[types[1]]
-                      })`;
-                return (
-                  <div
-                    key={p.id}
-                    className="pokemon-card"
-                    style={{ background: bgStyle }}
-                    onClick={() => openModal(p)}
-                  >
-                    <img
-                      src={
-                        p.sprites.versions["generation-v"]["black-white"]
-                          .animated.front_default || p.sprites.front_default
-                      }
-                      alt={p.name}
-                    />
-
-                    <h3>{p.koreanName}</h3>
-
-                    <div className="card-types">
-                      <div className="card-types">
-                        {types.map((type) => (
-                          <span
-                            className="card-type"
-                            key={type}
-                            style={{
-                              background: TYPE_COLORS[type],
-                              border: "1px solid black",
-                            }}
-                          >
-                            <img src={typeIcon(type)} alt={type} />
-                            {TYPE_LABELS_KO[type] || type}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button
-                      className="fav-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFavorite(p.id);
-                      }}
-                    >
-                      {favorites.includes(p.id) ? "💖" : "🤍"}
-                    </button>
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          <div className="pagination">
-            <button
-              disabled={page === 1}
-              onClick={() => handlePageChange(page - 1)}
-            >
-              이전
-            </button>
-            <span>
-              {page} / {totalPages}
-            </span>
-            <button
-              disabled={page === totalPages}
-              onClick={() => handlePageChange(page + 1)}
-            >
-              다음
-            </button>
-          </div>
-        </>
-      )}
-
-      {selected && (
-        <div className="modal">
-          <div className="modal-content">
-            <button className="close" onClick={closeModal}>
-              ×
-            </button>
-
-            <div className="modal-header">
-              <h2>
-                {selected.koreanName} ({selected.name})
-              </h2>
-            </div>
-
-            <div className="modal-nav">
-              <button onClick={goToPrevPokemon}>← 이전</button>
-              <button
-                className="fav-btn"
-                onClick={() => toggleFavorite(selected.id)}
-              >
-                {favorites.includes(selected.id) ? "💖" : "🤍"}
-              </button>
-              <button onClick={goToNextPokemon}>다음 →</button>
-            </div>
-            <img
-              src={
-                selected.sprites.versions["generation-v"]["black-white"]
-                  .animated.front_default ||
-                selected.sprites.other["official-artwork"].front_default
-              }
-              alt={selected.name}
-            />
-
-            <div className="types-detail">
-              {selected.types.map((t) => (
-                <span
-                  key={t.type.name}
-                  style={{ background: TYPE_COLORS[t.type.name] }}
-                >
-                  <img src={typeIcon(t.type.name)} alt={t.type.name} />
-                  {TYPE_LABELS_KO[t.type.name] || t.type.name}
-                </span>
-              ))}
-            </div>
-
-            <div className="stats">
-              {selected.stats.map((stat) => (
-                <div key={stat.stat.name}>
-                  <strong>
-                    {STAT_LABELS_KO[stat.stat.name] || stat.stat.name}
-                  </strong>
-                  <div className="bar">
-                    <div
-                      className="fill"
-                      style={{
-                        width: `${stat.base_stat / 2}%`,
-                        backgroundColor: getStatColor(stat.base_stat),
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <h3>진화 트리</h3>
-            {evoChain ? (
-              <EvolutionChain
-                chain={evoChain}
-                onSelect={selectFromEvo}
-                pokemonList={pokemonList}
-              />
-            ) : (
-              <p>진화 정보가 없습니다.</p>
-            )}
-          </div>
+    <div>
+      {showIntro && (
+        <div className="intro-screen">
+          <img
+            src="/pokeball.jpg"
+            alt="intro-pokeball"
+            className="intro-pokeball"
+          />
         </div>
       )}
+
+      <div
+        className={`app ${showIntro ? "hidden" : "visible"}`}
+        tabIndex={0}
+        onKeyDown={(e) => e.key === "Escape" && closeModal()}
+      >
+        <h1>포켓몬 도감</h1>
+
+        {!selected && (
+          <>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                gap: "1rem",
+                marginBottom: "1rem",
+                flexWrap: "wrap",
+              }}
+            >
+              <input
+                value={search}
+                onChange={handleSearch}
+                placeholder="이름으로 검색"
+              />
+              <button
+                className={`tab-button ${
+                  filterMode === "type" ? "active" : ""
+                }`}
+                onClick={() => setFilterMode("type")}
+              >
+                타입 필터
+              </button>
+
+              <button
+                className={`tab-button ${
+                  filterMode === "generation" ? "active" : ""
+                }`}
+                onClick={() => setFilterMode("generation")}
+              >
+                세대 필터
+              </button>
+
+              <button
+                className={`tab-button ${
+                  activeTab === "favorites" ? "active" : ""
+                }`}
+                onClick={() => {
+                  const newTab =
+                    activeTab === "favorites" ? "all" : "favorites";
+                  setActiveTab(newTab);
+                  setPage(1);
+                  if (newTab === "all") {
+                    fetchPokemons(1, true); // ✅ 전체 포켓몬 다시 불러오기
+                  } else {
+                    applyFilter(pokemonList, newTab);
+                  }
+                }}
+              >
+                즐겨찾기
+              </button>
+            </div>
+
+            {filterMode === "type" && (
+              <div className="types">
+                {Object.keys(TYPE_COLORS).map((type) => (
+                  <button
+                    key={type}
+                    className={typeFilter.includes(type) ? "active-type" : ""}
+                    style={{ "--type-color": TYPE_COLORS[type] }}
+                    onClick={() => handleTypeFilter(type)}
+                  >
+                    <img src={typeIcon(type)} alt={type} />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {filterMode === "generation" && (
+              <div className="generations">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((gen) => (
+                  <button
+                    key={gen}
+                    className={
+                      generationFilter === gen ? "active-generation" : ""
+                    }
+                    onClick={() => handleGenerationFilter(gen)}
+                  >
+                    {gen}세대
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div
+              className="pokemon-grid"
+              style={{ display: loading ? "block" : "grid" }}
+            >
+              {loading ? (
+                <div className="loading-spinner">
+                  <img src={pokeballImg} alt="loading" />
+                </div>
+              ) : (
+                paginated.map((p) => {
+                  const types = p.types.map((t) => t.type.name);
+                  const bgStyle =
+                    types.length === 1
+                      ? TYPE_COLORS[types[0]]
+                      : `linear-gradient(135deg, ${TYPE_COLORS[types[0]]}, ${
+                          TYPE_COLORS[types[1]]
+                        })`;
+                  return (
+                    <div
+                      key={p.id}
+                      className="pokemon-card"
+                      style={{ background: bgStyle }}
+                      onClick={() => openModal(p)}
+                    >
+                      <img
+                        src={
+                          p.sprites.versions["generation-v"]["black-white"]
+                            .animated.front_default || p.sprites.front_default
+                        }
+                        alt={p.name}
+                      />
+
+                      <h3>{p.koreanName}</h3>
+
+                      <div className="card-types">
+                        <div className="card-types">
+                          {types.map((type) => (
+                            <span
+                              className="card-type"
+                              key={type}
+                              style={{
+                                background: TYPE_COLORS[type],
+                                border: "1px solid black",
+                              }}
+                            >
+                              <img src={typeIcon(type)} alt={type} />
+                              {TYPE_LABELS_KO[type] || type}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <button
+                        className="fav-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(p.id);
+                        }}
+                      >
+                        {favorites.includes(p.id) ? "💖" : "🤍"}
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="pagination">
+              <button
+                disabled={page === 1}
+                onClick={() => handlePageChange(page - 1)}
+              >
+                이전
+              </button>
+              <span>
+                {page} / {totalPages}
+              </span>
+              <button
+                disabled={page === totalPages}
+                onClick={() => handlePageChange(page + 1)}
+              >
+                다음
+              </button>
+            </div>
+          </>
+        )}
+
+        {selected && (
+          <div className="modal">
+            <div className="modal-content">
+              <button className="close" onClick={closeModal}>
+                ×
+              </button>
+
+              <div className="modal-header">
+                <h2>
+                  {selected.koreanName} ({selected.name})
+                </h2>
+              </div>
+
+              <div className="modal-nav">
+                <button onClick={goToPrevPokemon}>← 이전</button>
+                <button
+                  className="fav-btn"
+                  onClick={() => toggleFavorite(selected.id)}
+                >
+                  {favorites.includes(selected.id) ? "💖" : "🤍"}
+                </button>
+                <button onClick={goToNextPokemon}>다음 →</button>
+              </div>
+              <img
+                src={
+                  selected.sprites.versions["generation-v"]["black-white"]
+                    .animated.front_default ||
+                  selected.sprites.other["official-artwork"].front_default
+                }
+                alt={selected.name}
+              />
+
+              <div className="types-detail">
+                {selected.types.map((t) => (
+                  <span
+                    key={t.type.name}
+                    style={{ background: TYPE_COLORS[t.type.name] }}
+                  >
+                    <img src={typeIcon(t.type.name)} alt={t.type.name} />
+                    {TYPE_LABELS_KO[t.type.name] || t.type.name}
+                  </span>
+                ))}
+              </div>
+
+              <div className="stats">
+                {selected.stats.map((stat) => (
+                  <div key={stat.stat.name}>
+                    <strong>
+                      {STAT_LABELS_KO[stat.stat.name] || stat.stat.name}
+                    </strong>
+                    <div className="bar">
+                      <div
+                        className="fill"
+                        style={{
+                          width: `${stat.base_stat / 2}%`,
+                          backgroundColor: getStatColor(stat.base_stat),
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <h3>진화 트리</h3>
+              {evoChain ? (
+                <EvolutionChain
+                  chain={evoChain}
+                  onSelect={selectFromEvo}
+                  pokemonList={pokemonList}
+                />
+              ) : (
+                <p>진화 정보가 없습니다.</p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
