@@ -20,8 +20,7 @@ const FAVORITES_KEY = "pokeFavorites";
 const POKEMON_LIMIT = 30;
 const TOTAL_POKEMON = 1025;
 
-const pokeballImg =
-  "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png";
+const pokeballImg = "/pokeball.jpg";
 const typeIcon = (type) =>
   `https://raw.githubusercontent.com/duiker101/pokemon-type-svg-icons/master/icons/${type}.svg`;
 
