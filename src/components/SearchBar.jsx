@@ -39,24 +39,28 @@ const SearchBar = ({
         onChange={handleSearch}
         placeholder="이름으로 검색"
       />
-      <button
-        className={`tab-button ${filterMode === "type" ? "active" : ""}`}
-        onClick={() => setFilterMode("type")}
-      >
-        타입 필터
-      </button>
-      <button
-        className={`tab-button ${filterMode === "generation" ? "active" : ""}`}
-        onClick={() => setFilterMode("generation")}
-      >
-        세대 필터
-      </button>
-      <button
-        className={`tab-button ${activeTab === "favorites" ? "active" : ""}`}
-        onClick={handleFavoritesToggle}
-      >
-        즐겨찾기
-      </button>
+      <div className="buttons">
+        <button
+          className={`tab-button ${filterMode === "type" ? "active" : ""}`}
+          onClick={() => setFilterMode("type")}
+        >
+          타입 필터
+        </button>
+        <button
+          className={`tab-button ${
+            filterMode === "generation" ? "active" : ""
+          }`}
+          onClick={() => setFilterMode("generation")}
+        >
+          세대 필터
+        </button>
+        <button
+          className={`tab-button ${activeTab === "favorites" ? "active" : ""}`}
+          onClick={handleFavoritesToggle}
+        >
+          즐겨찾기
+        </button>
+      </div>
     </div>
   );
 };

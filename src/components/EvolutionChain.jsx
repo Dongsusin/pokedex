@@ -1,8 +1,25 @@
-// components/EvolutionChain.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
 const EvolutionChain = ({ chain, onSelect, pokemonList }) => {
   const [loadedData, setLoadedData] = useState({});
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const checkOverflow = () => {
+      if (container.scrollWidth > container.clientWidth) {
+        container.classList.add("overflowing");
+      } else {
+        container.classList.remove("overflowing");
+      }
+    };
+
+    checkOverflow();
+    window.addEventListener("resize", checkOverflow);
+    return () => window.removeEventListener("resize", checkOverflow);
+  }, [chain, loadedData]);
 
   useEffect(() => {
     if (!chain) return;
@@ -95,7 +112,11 @@ const EvolutionChain = ({ chain, onSelect, pokemonList }) => {
   };
 
   if (!chain) return null;
-  return <div className="evolution-chain">{renderChain(chain)}</div>;
+  return (
+    <div className="evolution-chain" ref={containerRef}>
+      {renderChain(chain)}
+    </div>
+  );
 };
 
 export default EvolutionChain;
