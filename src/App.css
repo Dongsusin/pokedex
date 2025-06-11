@@ -4,7 +4,7 @@ html,
   margin: 0;
   padding: 0;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  background: #ef5350;
+  background-image: linear-gradient(to top, #ff0000 0%, #ff1919 100%);
   color: #333;
 }
 
@@ -59,7 +59,6 @@ input[type="text"] {
   box-sizing: border-box;
 }
 
-/* 공통 탭 버튼 스타일 */
 .tab-button {
   padding: 0.5rem 1.2rem;
   border-radius: 20px;
@@ -85,7 +84,6 @@ input[type="text"] {
   transform: scale(1.1);
 }
 
-/* 타입 필터 */
 .types {
   display: grid;
   width: 100%;
@@ -118,7 +116,12 @@ input[type="text"] {
   pointer-events: none;
 }
 
-.types button:hover,
+.types button:hover {
+  background-color: #aaa;
+  border: 3px solid black;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
+  transform: scale(1.1);
+}
 .types button.active-type {
   border: 3px solid black;
   background-color: var(--type-color);
@@ -126,7 +129,6 @@ input[type="text"] {
   transform: scale(1.1);
 }
 
-/* 세대 필터 */
 .generations {
   display: flex;
   flex-wrap: wrap;
@@ -163,7 +165,6 @@ input[type="text"] {
   transform: scale(1.1);
 }
 
-/* 필터 전환 버튼 (타입/세대) */
 .filter-toggle-btn {
   background-color: #444;
   color: white;
@@ -185,7 +186,6 @@ input[type="text"] {
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
 }
 
-/* 포켓몬 카드 */
 .pokemon-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -207,6 +207,11 @@ input[type="text"] {
   justify-content: center;
   font-size: 1rem;
   cursor: pointer;
+}
+
+.pokemon-card:hover {
+  box-shadow: 0 0 8px 2px rgba(255, 255, 255, 0.8),
+    0 0 15px 4px rgba(0, 150, 255, 0.7), 0 0 20px 6px rgba(0, 150, 255, 0.5);
 }
 
 .pokemon-card img {
@@ -246,7 +251,6 @@ input[type="text"] {
   margin-right: 0.25rem;
 }
 
-/* 페이지네이션 */
 .pagination {
   display: flex;
   flex-direction: row;
@@ -260,7 +264,6 @@ input[type="text"] {
   padding: 0.5rem 1rem;
 }
 
-/* 모달 */
 .modal {
   display: flex;
   flex-direction: column;
@@ -347,7 +350,6 @@ input[type="text"] {
   transition: width 0.3s ease-in-out, background-color 0.3s;
 }
 
-/* 진화 트리 */
 .evolution-chain {
   display: flex;
   flex-direction: row;
@@ -431,7 +433,6 @@ input[type="text"] {
   background-color: #555;
 }
 
-/* 로딩 스피너 */
 .loading-spinner {
   width: 100%;
   height: 300px;
@@ -456,7 +457,6 @@ input[type="text"] {
   }
 }
 
-/* 인트로 화면 */
 .intro-screen {
   position: fixed;
   top: 0;
@@ -485,7 +485,6 @@ input[type="text"] {
   }
 }
 
-/* 메인 등장 효과 */
 .app.hidden {
   opacity: 0;
   transform: scale(0.8);
@@ -498,7 +497,6 @@ input[type="text"] {
   transition: opacity 1s ease, transform 1s ease;
 }
 
-/* 반응형 */
 @media screen and (max-width: 768px) {
   input {
     margin-bottom: 5px;
