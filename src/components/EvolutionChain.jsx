@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from "react";
 
 const EvolutionChain = ({ chain, onSelect, pokemonList }) => {
-  const [loadedData, setLoadedData] = useState({});
-  const containerRef = useRef(null);
+  const [loadedData, setLoadedData] = useState({}); // API로 추가 로딩한 포켓몬 데이터 저장
+  const containerRef = useRef(null); // 진화 체인 컨테이너 참조
 
+  // 화면 리사이즈 시 오버플로우 여부를 체크하여 클래스 추가
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -21,19 +22,21 @@ const EvolutionChain = ({ chain, onSelect, pokemonList }) => {
     return () => window.removeEventListener("resize", checkOverflow);
   }, [chain, loadedData]);
 
+  // 진화 체인의 포켓몬 데이터를 가져옴 (로컬에 없는 경우만)
   useEffect(() => {
     if (!chain) return;
 
     const queue = [];
     const collectNames = (node) => {
-      queue.push(node.species.name);
-      node.evolves_to.forEach(collectNames);
+      queue.push(node.species.name); // 현재 포켓몬 이름 추가
+      node.evolves_to.forEach(collectNames); // 재귀적으로 다음 진화 단계 탐색
     };
     collectNames(chain);
 
     const fetchMissing = async () => {
       const newData = {};
       for (const name of queue) {
+        // 이미 로드되었거나 리스트에 존재하면 무시
         if (pokemonList.some((p) => p.name === name)) continue;
         if (loadedData[name]) continue;
 
@@ -46,11 +49,13 @@ const EvolutionChain = ({ chain, onSelect, pokemonList }) => {
           ).then((r) => r.json());
           const koreanName =
             species.names.find((n) => n.language.name === "ko")?.name || name;
+
           newData[name] = {
-            image: details.sprites.front_default,
+            image: details.sprites.front_default, // 포켓몬 이미지
             koreanName,
           };
         } catch {
+          // 실패할 경우 기본 데이터로 대체
           newData[name] = {
             image: null,
             koreanName: name,
@@ -63,6 +68,7 @@ const EvolutionChain = ({ chain, onSelect, pokemonList }) => {
     fetchMissing();
   }, [chain, pokemonList]);
 
+  // 진화 조건을 텍스트로 변환
   const renderCondition = (evoDetail) => {
     if (!evoDetail) return null;
     if (evoDetail.min_level) return `레벨 ${evoDetail.min_level} 이상`;
@@ -73,12 +79,14 @@ const EvolutionChain = ({ chain, onSelect, pokemonList }) => {
     return "조건 없음";
   };
 
+  // 재귀적으로 진화 체인을 렌더링
   const renderChain = (node) => {
     const name = node.species.name;
     const p = pokemonList.find((p) => p.name === name);
     const image = p?.sprites?.front_default || loadedData[name]?.image;
     const koreanName = p?.koreanName || loadedData[name]?.koreanName || name;
 
+    // 현재 포켓몬 표시
     const current = (
       <div className="evo-step" onClick={() => onSelect(name)} key={name}>
         {image ? (
@@ -90,9 +98,12 @@ const EvolutionChain = ({ chain, onSelect, pokemonList }) => {
       </div>
     );
 
+    // 더 이상 진화가 없다면 현재 노드만 반환
     if (!node.evolves_to || node.evolves_to.length === 0) return [current];
 
     const chainElements = [current];
+
+    // 각 다음 단계 진화에 대해 화살표와 조건, 다음 노드 재귀적으로 렌더링
     node.evolves_to.forEach((child, index) => {
       const evoDetail = child.evolution_details?.[0];
       const conditionText = renderCondition(evoDetail);
@@ -112,6 +123,7 @@ const EvolutionChain = ({ chain, onSelect, pokemonList }) => {
   };
 
   if (!chain) return null;
+
   return (
     <div className="evolution-chain" ref={containerRef}>
       {renderChain(chain)}
